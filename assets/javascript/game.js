@@ -1,4 +1,3 @@
-//build pre-document ready variables here
 var assets = {
     imagepath: './assets/images/',
     weaponImage: function(role){
@@ -30,28 +29,23 @@ var utilities = {
     }
 };
 
-var rpgCharBase = {
-    name: '',
-    character: '',
-    role: '',
-    health: '',
-    attack: '',
-    counter: '',
-    special: {label: '', value: 0},
-    init: function(name, role, health, attack, special){
-        this.name = name;
-        this.character = assets.characterImage(role, 'inactive');
-        this.role = role;
-        this.health = health;
-        this.attack = attack;
-        this.special['label'] = special;
-        return this;
-    }
+
+var rpgCharBase = function(name, role, health, attack, specialabel){
+    return {
+        name: name,
+        character: assets.characterImage(role, 'inactive'),
+        role: role,
+        health: health,
+        attack: attack,
+        counter: 0,
+        special: {label: specialabel, value: 0}
+    };
+
 };
 var characterObjs = {
-    archer: rpgCharBase.init('Chad', 'archer', 100, 10, 'arrow me a river'),
-    assassin: rpgCharBase.init('Dick', 'assassin', 60, 25, 'dart barf'),
-    mage: rpgCharBase.init('Bill', 'mage', 45, 40, 'glitter bomb')
+    archer: new rpgCharBase('Chad', 'archer', 100, 10, 'arrow me a river'),
+    assassin: new rpgCharBase('Dick', 'assassin', 60, 25, 'dart barf'),
+    mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb')
 };
 
 //build document ready functions here
@@ -63,20 +57,22 @@ function buildPlatform(){
     });
 }
 
+function gameProgress(user, opponent){
+    var usercharacter = {role: user};
+    var opponentcharacter = {role: opponent};
+    return [usercharacter, opponentcharacter];
+}
+
 function buildCharacterFrame() {
     var labels = $('#characters thead');
-    var cols = labels.find('th').length;
-    //this seems out of place
     var tableHeaders = labels.find('th').map(function(k,v){
         var unsanitized = v.outerText;
         return unsanitized.indexOf(" ") > -1 ? unsanitized.slice(0, unsanitized.indexOf(" ")).toLowerCase() : unsanitized.toLowerCase();
     });
-    //$(characterObjs[0]).each(function(k,v){
     $.each(characterObjs, function(role, properties){
         var thisTR = document.createElement('tr');
         $(thisTR).addClass(role);
         $('#characters .info').append(thisTR);
-        //var tdCreated = $('#characters .info').append('<tr class="' + role + '"></tr>');
         $.each(properties, function(property, value){
             var thisTD = document.createElement('td');
             if($.isFunction(value))
@@ -99,28 +95,35 @@ function buildCharacterFrame() {
 
         });
     });
-
-    var image = document.createElement('IMG');
-    image.src = assets.characterImage('archer','inactive');
-    $('.info .archer .character').append(image);
-
-    //
-    //console.log(properties);
-    //buildcharacters(properties);
 }
 
-function buildcharacters(propertyList) {
-    //console.log(characters);
-    //ui
-    //https://api.jquery.com/add/
-    //character objects
-}
 
 //generate objects from document ready state here
 
 $(document).ready(function() {
     buildPlatform();
     buildCharacterFrame();
+    var pickedCharacter = false;
+    $('#characters .info tr').one('click', function(){
+        var image = $(this).find('img');
+        if(pickedCharacter){
+            $('#battle_arena #opponent').html(image.clone().addClass(this.className).css({'transform': 'scaleX(-1)'}));
+            $('#battle_arena #opponent').append('<span>Enemy</span>');
+            $('#characters .info tr').unbind('click');
+        } else {
+            pickedCharacter = true;
+            $('#battle_arena #user').html(image.clone().addClass(this.className));
+            $('#battle_arena #user').append('<span>You</span>');
+
+            /*-moz-transform: scaleX(-1);
+            -o-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1);
+            filter: FlipH;
+            -ms-filter: "FlipH";*/
+        }
+        image.css({'opacity':'0.5'});
+    });
 });
 
 /*
