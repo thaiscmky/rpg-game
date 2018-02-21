@@ -27,6 +27,7 @@ var utilities = {
         thisImg.src = src;
         return [thisImg.width, thisImg.height];
     }
+    //other utilities: load modal
 };
 
 
@@ -48,36 +49,49 @@ var characterObjs = {
     mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb')
 };
 
-//build document ready functions here
-function buildPlatform(){
-    var dimensions = utilities.getImageSize(assets.imagepath + 'platform.jpg');
-    $('#battle_arena').css({
-        'height':dimensions[1] + 'px',
-        'width': dimensions[0] + 'px',
-    });
-}
+var renderUi = {
+    table: '',
+    tableBody: '',
+    tableLabels: '',
+    characters: characterObjs,
+    buildPlatform: function(){
+        var dimensions = utilities.getImageSize(assets.imagepath + 'platform.jpg');
+        $('#battle_arena').css({
+            'height':dimensions[1] + 'px',
+            'width': dimensions[0] + 'px',
+        });
+    },
+    buildTabularData: function(charTableId,charInfoClass){
+        var self = this;
+        self.tableId = charTableId;
+        self.tableBody = charInfoClass;
+        var labels = $('#'+charTableId+' thead');
+        self.tableLabels = labels.find('th').map(function(k,v){
+            var unsanitized = v.outerText;
+            return unsanitized.indexOf(" ") > -1 ? unsanitized.slice(0, unsanitized.indexOf(" ")).toLowerCase() : unsanitized.toLowerCase();
+        });
+        $('#'+self.tableId+' .'+self.tableBody).append(self.buildCharacterRows());
 
-function gameProgress(user, opponent){
-    var usercharacter = {role: user};
-    var opponentcharacter = {role: opponent};
-    return [usercharacter, opponentcharacter];
-}
 
-function buildCharacterFrame() {
-    var labels = $('#characters thead');
-    var tableHeaders = labels.find('th').map(function(k,v){
-        var unsanitized = v.outerText;
-        return unsanitized.indexOf(" ") > -1 ? unsanitized.slice(0, unsanitized.indexOf(" ")).toLowerCase() : unsanitized.toLowerCase();
-    });
-    $.each(characterObjs, function(role, properties){
-        var thisTR = document.createElement('tr');
-        $(thisTR).addClass(role);
-        $('#characters .info').append(thisTR);
-        $.each(properties, function(property, value){
+    },
+    buildCharacterRows: function(){
+        var self = this;
+        var rows = $(Object.keys(self.characters)).map(function(i, role){
+            var thisTR = document.createElement('tr');
+            $(thisTR).addClass(role);
+            $(thisTR).append(self.buildPropertyCells(self.characters[role]));
+            return thisTR;
+        });
+        return rows;
+    },
+    buildPropertyCells: function(row){
+        var self = this;
+        var tds = [];
+        $.each(row, function(property, value){
             var thisTD = document.createElement('td');
-            if($.isFunction(value))
-                return;
-            if($.inArray(property, tableHeaders) === -1)
+            /*if($.isFunction(value))
+                return;*/
+            if($.inArray(property, self.tableLabels) === -1)
                 return;
             switch(property){
                 case 'character': //;
@@ -91,46 +105,55 @@ function buildCharacterFrame() {
                 default:
                     $(thisTD).html(value);
             }
-            $(thisTR).append($(thisTD));
+            tds.push($(thisTD));
 
         });
-    });
-}
+        return tds;
+    },
+    renderSelection: function(player, fighter){
+        var image = $(fighter).find('img');
+        var selector = '#battle_arena #'+player;
+        if(player==='user'){
+            $(selector).html(image.clone().addClass(fighter.className));
+            $(selector).append( '<span>You</span>' );
+        } else {
+            $(selector).html(image.clone().addClass(fighter.className).css({'transform': 'scaleX(-1)'}));
+            $(selector).append(  '<span>Enemy</span>' );
+        }
+    }
+};
 
+var gameProgress = {
+    user: false,
+    opponent: false,
+    setFighters: function(opponent, user){
+        if(typeof opponent === 'undefined')
+            opponent = this.opponent;
+        if(typeof user === 'undefined')
+            user = this.user;
+        this.user = user;
+        this.opponent = opponent;
+    },
+    getCurrentFighters: function () {
+        return [this.opponent, this.user];
+    }
+};
 
-//generate objects from document ready state here
 
 $(document).ready(function() {
-    buildPlatform();
-    buildCharacterFrame();
-    var pickedCharacter = false;
+    renderUi.buildPlatform();
+    renderUi.buildTabularData('characters', 'info');
     $('#characters .info tr').one('click', function(){
-        var image = $(this).find('img');
-        if(pickedCharacter){
-            $('#battle_arena #opponent').html(image.clone().addClass(this.className).css({'transform': 'scaleX(-1)'}));
-            $('#battle_arena #opponent').append('<span>Enemy</span>');
+        var selection = this;
+        var role = this.className.split(' ')[0];
+        if(gameProgress.user){
+            renderUi.renderSelection('opponent', selection);
+            gameProgress.opponent = characterObjs[role];
             $('#characters .info tr').unbind('click');
+            gameProgress.setFighters();
         } else {
-            pickedCharacter = true;
-            $('#battle_arena #user').html(image.clone().addClass(this.className));
-            $('#battle_arena #user').append('<span>You</span>');
-
-            /*-moz-transform: scaleX(-1);
-            -o-transform: scaleX(-1);
-            -webkit-transform: scaleX(-1);
-            transform: scaleX(-1);
-            filter: FlipH;
-            -ms-filter: "FlipH";*/
+            renderUi.renderSelection('user', selection);
+            gameProgress.user = characterObjs[role];
         }
-        image.css({'opacity':'0.5'});
     });
 });
-
-/*
-    More references
- http://api.jquery.com/on/ (also jquery one and jquery off)
- https://stackoverflow.com/questions/4230029/jquery-javascript-collision-detection
- https://css-tricks.com/collision-detection/
- https://jsfiddle.net/ryanoc/TG2M7/
-
- */
