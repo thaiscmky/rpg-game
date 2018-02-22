@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>RPG</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <script src="./assets/javascript/game.js"></script>
+</head>
+<body>
+<main class="container py-4 px-5 h-100 mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div id="score_keeping">
+                Your wins: <span class="win">0</span><br/>
+                Your losses: <span class="loss">0</span><br/>
+                Rounds Left: <span class="rounds"></span><br/>
+            </div>
+            <h1>The characters</h1>
+
+            <table id="characters">
+                <thead class="labels">
+                    <tr><!--add class character and class role-->
+                        <th>
+                            Character
+                        </th>
+                        <th>
+                            Role
+                        </th>
+                        <th>
+                            Health
+                        </th>
+                        <th>
+                            Attack
+                        </th>
+                        <th>
+                            Special Attack
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="info">
+                </tbody>
+            </table>
+
+            <h1>The platform</h1>
+            <div class="row">
+                <div class="col-12">
+                    <div id="battle_arena">
+                        <div class="row characterlane">
+                            <div id="user"></div>
+                            <div class="negative-space"></div>
+                            <div id="opponent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<!--<div id="gameModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content px-4 py-3">
+            <div id="startscreen">
+                <h1>Welcome to Hangman:<br/>Retro Games Edition</h1>
+                <p>Play the song associated with the word displayed.</p>
+                <p>Try to guess which game features that soundtrack by selecting the letters on your keyboard.</p>
+                <p>Guess it right, or die trying!</p>
+            </div>
+            <div id="exitscreen">
+                <h1></h1>
+                <div id="result"></div>
+                <div id="stats"></div>
+            </div>
+            <button type="button" id="gameAction" class="btn btn-dark"></button>
+        </div>
+    </div>
+</div>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+</html>

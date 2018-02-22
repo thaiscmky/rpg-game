@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+div#battle_arena {
+    background: url('../images/platform.jpg');
+    position: relative;
+}
+div#battle_arena .characterlane{
+    position: absolute;
+    bottom: 45%;
+    left: 16%;
+    width: 100%;
+}
+#battle_arena #user span, #battle_arena #opponent span{
+    display: inline-block;
+    text-align: center;
+    font-family:'Press+Start+2P', sans-serif;
+    color: #fff;
+    font-weight:bold;
+}
+#battle_arena #user > span, #battle_arena #opponent > span {
+    position: absolute;
+    top: -40px;
+    background-color: #4a4545;
+    border: 1px solid #17a2b8;
+    border-radius: 10px;
+    padding: 0.2em 0.5em;
+}
+img.mage {
+    margin-top: -35px;
+}
+#battle_arena #user span{ left:16%;}
+#battle_arena #opponent span{ right:16%;}
+#battle_arena .negative-space {
+    position:relative;
+    width: 400px;
+}
+div#battle_arena #opponent, #battle_arena #user {
+    float:left;
+    position:relative;
+}
+
+table, tr, td, th {
+    border: 1px solid #000;
+}
