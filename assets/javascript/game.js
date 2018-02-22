@@ -182,15 +182,7 @@ var renderUi = {
                 //TODO: enhanced mechanics
             },
             complete: function() {
-                var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.user.role);
-                $('#battle_arena #user').find('img')[0].src = gameProgress.getCurrentFighters()[1].character;
-                $(this).removeAttr('style');
-                $(this).remove();
-                if(typeof position === 'undefined' || position[0] > 420)
-                {
-                    var currentPlayers = gameProgress.getCurrentFighters();
-                    gameProgress.subtractHealth(currentPlayers[1], currentPlayers[0]);
-                }
+                gameProgress.validateAttack(this,'user', image);
             }
         });
     },
@@ -206,44 +198,7 @@ var renderUi = {
                 //TODO: enhanced mechanics
             },
             complete: function() {
-                var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.opponent.role);
-                $('#battle_arena #opponent').find('img')[0].src = gameProgress.getCurrentFighters()[0].character;
-                $(this).removeAttr('style');
-                if(typeof position === 'undefined' || position[0] < -88){
-                    var currentPlayers = gameProgress.getCurrentFighters();
-                    gameProgress.subtractHealth(currentPlayers[0], currentPlayers[1]);
-                }
-                if(gameProgress.getCurrentFighters()[0].health > 0 &&
-                    gameProgress.getCurrentFighters()[1].health > 0)
-                    renderUi.opponentWeapon(image);
-                else {
-                    $('#battle_arena .negative-space').html('');
-                    $('#characters .info .' + gameProgress.opponent.role + ' img').css({
-                        'background-color':'#4A4545'
-                    });
-                    gameProgress.rounds -= 1;
-                   if(gameProgress.getCurrentFighters()[0].health > 0){
-                       gameProgress.losses += 1;
-                       renderUi.updateLosses();
-                       alert('You lose!');
-                   } else {
-                       gameProgress.wins += 1;
-                       renderUi.updateWins();
-                       alert('You win!');
-                       gameProgress.user.health = defaults[gameProgress.user.role].health;
-                       $('#battle_arena #user span span').html(gameProgress.user.health);
-                   }
-                   if(gameProgress.rounds > 0){
-                       //reset round
-                       alert('Starting the next round');
-                       renderUi.updateRounds();
-                       gameProgress.resetCurrentPlayer();
-                       gameProgress.getNextOpponent();
-                       $('#battle_arena #user span span').html(gameProgress.user.health);
-                   } else {
-                       alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
-                   }
-                }
+                gameProgress.validateAttack(this,'opponent', image);
             }
         });
     }
@@ -276,91 +231,197 @@ var gameProgress = {
         if(target.role === gameProgress.user.role)
             $('#battle_arena #user span span').html(target.health);
     },
-    resetCurrentPlayer: function() {
+    /*resetCurrentPlayer: function() {
         characterObjs[this.user.role] = defaults[this.user.role];
         this.user = characterObjs[this.user.role];
-    },
+    },*/
     getNextOpponent: function(){
         var self = this;
+        this.updateScore();
+        this.resetPlayer();
+        this.resetOpponent();
         gameProgress.fighting = false;
-        gameProgress.user = $.extend(true, {}, characterObjs[gameProgress.user.role]);
-        $('#battle_arena #user span span').html(gameProgress.user['health']);
-        $('#battle_arena #opponent').html('');
+        this.updateUi();
         $('#characters .info').one('click', '.enemy', function(){
             var selection = this;
             var role = selection.className.split(' ')[0];
             $(selection).removeClass('enemy');
-            gameProgress.opponent = characterObjs[role];
+            gameProgress.opponent = $.extend(true, {}, characterObjs[role]);
             renderUi.renderSelection('opponent', selection);
             gameProgress.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
             $('#characters .info tr').off('click');
             gameProgress.setFighters();
         });
+    },
+    setFinalStats: function () {
+        this.updateScore();
+        gameProgress.fighting = false;
+        this.updateUi();
+    },
+    updateScore: function(){
+        if(this.rounds > 0) this.rounds -= 1;
+        if(this.opponent > 0)
+            this.losses += 1;
+        else
+            this.wins += 1;
+    },
+    resetPlayer: function(){
+        $('#battle_arena #user span span').html(this.user['health']);
+        this.user = $.extend(true, {}, characterObjs[this.user.role]);
+        if(this.rounds <= 0){
+            $('#battle_arena #user').html('');
+            this.user = false;
+        }
+    },
+    resetOpponent: function(){
+      $('#battle_arena #opponent').html('');
+      if(this.rounds <= 0){
+          this.opponent = false;
+      }
+    },
+    updateUi: function () {
+        renderUi.updateRounds();
+        renderUi.updateLosses();
+        renderUi.updateWins();
+    },
+    resetScores: function () {
+        this.wins = 0;
+        this.losses = 0;
+        this.rounds = 0;
+    },
+    resetGame: function () {
+        
+    },
+    initGame: function () {
+        gameProgress.rounds = Object.keys(characterObjs).length - 1;
+        renderUi.updateRounds();
+
+        /*
+        TODO: add jump feature
+        $('#battle_arena #user').on('click', function(){
+            if(gameProgress.user && gameProgress.opponent) gameMechanics.jump(this);
+        });*/
+
+    },
+    initSelections: function () {
+        $('#characters .info tr').one('click', function(){
+            var selection = this;
+            var role = this.className.split(' ')[0];
+            $(selection).removeClass('enemy');
+            if(gameProgress.user){
+                gameProgress.initOpponentSelection(role,selection);
+            } else {
+                gameProgress.initOpponentSelection(role,selection);
+            }
+        });
+    },
+    initOpponentSelection: function (role, selection) {
+        this.opponent = $.extend(true, {}, characterObjs[role]);
+        renderUi.renderSelection('opponent', selection);
+        this.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
+        $('#characters .info tr').off('click');
+        this.setFighters();
+        this.setOpponentListener();
+    },
+    setOpponentListener: function(){
+        $('#battle_arena #opponent').on('click', function(){
+            if(gameProgress.user &&
+                gameProgress.opponent &&
+                gameProgress.opponent.health > 0 &&
+                gameProgress.user.health > 0
+            )
+            {
+                if(gameProgress.fighting === false || gameProgress.opponent === null){
+                    //start animating opponent
+                    var opponentRole = gameProgress.getCurrentFighters()[0]['role'];
+                    renderUi.opponentWeapon(characterObjs[opponentRole].weaponui);
+                    gameProgress.fighting = true;
+                }
+                gameActions.attack(this);
+            } else {
+                if(gameProgress.user.health > 0){
+                    //gameProgress.user.health = defaults[gameProgress.user.role].health;
+                    gameProgress.user.health = characterObjs[gameProgress.user.role].health;
+                    $('#battle_arena #user span span').html(gameProgress.user.health);
+                } else {
+                    gameProgress.user.health = 0;
+                    $('#battle_arena #user span span').html(0);
+                }
+            }
+        });
+    },
+    initUserSelection: function (role, selection) {
+        this.user = $.extend(true, {}, characterObjs[role]);
+        renderUi.renderSelection('user', selection);
+        this.user.characterpos = utilities.getPosition('#battle_arena #user');
+    },
+    validateAttack: function(el, fighterId, weaponUi){
+        //opponent logic
+        var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress[fighterId]['role']);
+        $('#battle_arena #'+fighterId).find('img')[0].src = gameProgress[fighterId]['character']; //gameProgress.getCurrentFighters()[0].character;
+        $(el).removeAttr('style');
+        switch(fighterId){
+            case 'opponent':
+                this.validateOpponentAttack(el, fighterId, weaponUi, position);
+                break;
+            case 'user':
+                this.validateUserAttack(el, fighterId, weaponUi, position);
+                break;
+        }
+        this.validateFight();
+    },
+    validateOpponentAttack: function(el, fighterId, weaponUi, position) {
+        if(typeof position === 'undefined' || position[0] < -88){
+            gameProgress.subtractHealth(this.opponent, this.user);
+        }
+        if(gameProgress.opponent.health > 0 && gameProgress.user.health > 0)
+            renderUi.opponentWeapon(weaponUi);
+        else {
+            $('#battle_arena .negative-space').html('');
+            $('#characters .info .' + gameProgress[fighterId]['role'] + ' img').css({
+                'background-color':'#4A4545'
+            });
+        }
+    },
+    validateUserAttack: function(el, fighterId, weaponUi, position) {
+        $(el).remove();
+        if(typeof position === 'undefined' || position[0] > 420)
+        {
+            gameProgress.subtractHealth(this.user, this.opponent);
+        }
+    },
+    validateFight: function () {
+        if(gameProgress.opponent.health  > 0){
+            alert('You lose!');
+        } else {
+            alert('You win!');
+        }
+        if(gameProgress.rounds > 0){
+            gameProgress.getNextOpponent();
+            alert('Starting the next round');
+        } else {
+            alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
+            gameProgress.setFinalStats();
+        }
     }
 };
 
-function attack(opponentElement){
-    var role = gameProgress.getCurrentFighters()[1]['role'];
-    $('#battle_arena #user').find('img')[0].src = assets.characterImage(role, 'active');
-    if((weapon = $('#battle_arena .negative-space img.'+role)).length){
-        weapon.remove();
+var gameActions = {
+    attack: function(opponent){
+        var role = gameProgress.getCurrentFighters()[1]['role'];
+        $('#battle_arena #user').find('img')[0].src = assets.characterImage(role, 'active');
+        if((weapon = $('#battle_arena .negative-space img.'+role)).length){
+            weapon.remove();
+        }
+        renderUi.characterWeapon(characterObjs[role].weaponui);
+    },
+    jump: function (user) {
+        //TODO: add jump feature;
     }
-    renderUi.characterWeapon(characterObjs[role].weaponui);
-}
-function jump(userElement){
-    //TODO: add jump feature;
 }
 
 $(document).ready(function() {
     renderUi.buildPlatform();
     renderUi.buildTabularData('characters', 'info');
-    gameProgress.rounds = Object.keys(characterObjs).length - 1;
-    renderUi.updateRounds();
-    $('#characters .info tr').one('click', function(){
-        var selection = this;
-        var role = this.className.split(' ')[0];
-        $(selection).removeClass('enemy');
-        if(gameProgress.user){
-            gameProgress.opponent = characterObjs[role];
-            renderUi.renderSelection('opponent', selection);
-            gameProgress.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
-            $('#characters .info tr').off('click');
-            gameProgress.setFighters();
-        } else {
-            gameProgress.user = characterObjs[role];
-            renderUi.renderSelection('user', selection);
-            gameProgress.user.characterpos = utilities.getPosition('#battle_arena #user');
-        }
-    });
-
-    /*
-    TODO: add jump feature
-    $('#battle_arena #user').on('click', function(){
-        if(gameProgress.user && gameProgress.opponent) jump(this);
-    });*/
-
-    $('#battle_arena #opponent').on('click', function(){
-        if(gameProgress.user &&
-            gameProgress.opponent &&
-            gameProgress.opponent.health > 0 &&
-            gameProgress.user.health > 0
-        )
-        {
-            if(gameProgress.fighting === false || gameProgress.opponent === null){
-                //start animating opponent
-                var opponentRole = gameProgress.getCurrentFighters()[0]['role'];
-                renderUi.opponentWeapon(characterObjs[opponentRole].weaponui);
-                gameProgress.fighting = true;
-            }
-            attack(this);
-        } else {
-            if(gameProgress.user.health > 0){
-                gameProgress.user.health = defaults[gameProgress.user.role].health;
-                $('#battle_arena #user span span').html(gameProgress.user.health);
-            } else {
-                gameProgress.user.health = 0;
-                $('#battle_arena #user span span').html(0);
-            }
-        }
-    });
+    gameProgress.initSelections();
 });
