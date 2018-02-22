@@ -27,8 +27,12 @@ var utilities = {
         var thisImg = new Image();
         thisImg.src = src;
         return [thisImg.width, thisImg.height];
+    },
+    getPosition: function(element) {
+        var x = $(element).position().left;
+        var y = $(element).position().top;
+        return [Math.floor(x),Math.floor(y)];
     }
-    //other utilities: load modal
 };
 
 var rpgCharBase = function(name, role, health, attack, specialabel){
@@ -44,7 +48,8 @@ var rpgCharBase = function(name, role, health, attack, specialabel){
         health: health,
         attack: attack,
         weaponui: attackGraphics(),
-        weaponposition: [],
+        weaponpos: [],
+        characterpos: [],
         counter: 0,
         special: {label: specialabel, value: 0}
     };
@@ -56,6 +61,8 @@ var characterObjs = {
     assassin: new rpgCharBase('Dick', 'assassin', 60, 25, 'dart barf'),
     mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb')
 };
+
+var defaults = $.extend(true, {}, characterObjs);
 
 var renderUi = {
     table: '',
@@ -125,11 +132,12 @@ var renderUi = {
         var selector = '#battle_arena #'+player;
         if(player==='user'){
             $(selector).html(clone);
-            $(selector).append( '<span>You</span>' );
+            $(selector).append( '<span>Your HP: <span></span></span>' );
         } else {
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
-            $(selector).append(  '<span>Enemy</span>' );
+            $(selector).append(  '<span>Enemy HP: <span></span></span>' );
         }
+        $(selector +' span span').html(gameProgress[player]['health']);
         image.css({'opacity': '0.5'});
     },
     updateWins: function(){
@@ -148,10 +156,23 @@ var renderUi = {
         $('#battle_arena .negative-space').append(clone);
         clone.animate({
             left: $('#battle_arena .negative-space').width() + 30
-        }, 500, function(){
-            $('#battle_arena #user').find('img')[0].src = gameProgress.getCurrentFighters()[1].character;
-            $(this).removeAttr('style');
-            $(this).remove();
+        }, {
+            duration: 500,
+            progress: function(){
+                //TODO: enhanced mechanics
+            },
+            complete: function() {
+                //ends at x 430
+                var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.user.role);
+                $('#battle_arena #user').find('img')[0].src = gameProgress.getCurrentFighters()[1].character;
+                $(this).removeAttr('style');
+                $(this).remove();
+                if(position[0] > 420)
+                {
+                    var currentPlayers = gameProgress.getCurrentFighters();
+                    gameProgress.subtractHealth(currentPlayers[1], currentPlayers[0]);
+                }
+            }
         });
     },
     opponentWeapon: function(image){
@@ -160,10 +181,34 @@ var renderUi = {
         $('#battle_arena .negative-space').append(image);
         $(image).animate({
             right: $('#battle_arena .negative-space').width() + 60
-        }, 1500, function(){
-            $('#battle_arena #opponent').find('img')[0].src = gameProgress.getCurrentFighters()[0].character;
-            $(this).removeAttr('style');
-            renderUi.opponentWeapon(image);
+        }, {
+            duration: 1500,
+            progress: function(){
+                //TODO: enhanced mechanics
+            },
+            complete: function() {
+                //stops at -90
+                var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.opponent.role);
+                $('#battle_arena #opponent').find('img')[0].src = gameProgress.getCurrentFighters()[0].character;
+                $(this).removeAttr('style');
+                if(position[0] < -88){
+                    var currentPlayers = gameProgress.getCurrentFighters();
+                    gameProgress.subtractHealth(currentPlayers[0], currentPlayers[1]);
+                }
+                if(gameProgress.getCurrentFighters()[0].health > 0 &&
+                    gameProgress.getCurrentFighters()[1].health > 0)
+                    renderUi.opponentWeapon(image);
+                else {
+                    $('#battle_arena .negative-space').html('');
+                   if(gameProgress.getCurrentFighters()[0].health > 0){
+                       alert('You lose!');
+                   } else {
+                       alert('You win!');
+                       gameProgress.user.health = defaults[gameProgress.user.role].health;
+                       $('#battle_arena #user span span').html(gameProgress.user.health);
+                   }
+                }
+            }
         });
     }
 };
@@ -185,6 +230,13 @@ var gameProgress = {
     },
     getCurrentFighters: function () {
         return [this.opponent, this.user];
+    },
+    subtractHealth: function(source, target){
+        target.health -= source.attack;
+        if(target.role === gameProgress.opponent.role)
+            $('#battle_arena #opponent span span').html(target.health);
+        if(target.role === gameProgress.user.role)
+            $('#battle_arena #user span span').html(target.health);
     }
 };
 
@@ -209,22 +261,31 @@ $(document).ready(function() {
         var selection = this;
         var role = this.className.split(' ')[0];
         if(gameProgress.user){
-            renderUi.renderSelection('opponent', selection);
             gameProgress.opponent = characterObjs[role];
+            renderUi.renderSelection('opponent', selection);
+            gameProgress.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
             $('#characters .info tr').unbind('click');
             gameProgress.setFighters();
         } else {
-            renderUi.renderSelection('user', selection);
             gameProgress.user = characterObjs[role];
+            renderUi.renderSelection('user', selection);
+            gameProgress.user.characterpos = utilities.getPosition('#battle_arena #user');
         }
     });
+
     /*
     TODO: add jump feature
     $('#battle_arena #user').on('click', function(){
         if(gameProgress.user && gameProgress.opponent) jump(this);
     });*/
+
     $('#battle_arena #opponent').on('click', function(){
-        if(gameProgress.user && gameProgress.opponent){
+        if(gameProgress.user &&
+            gameProgress.opponent &&
+            gameProgress.opponent.health > 0 &&
+            gameProgress.user.health > 0
+        )
+        {
             if(gameProgress.fighting === false){
                 //start animating opponent
                 var opponentRole = gameProgress.getCurrentFighters()[0]['role'];
@@ -233,10 +294,14 @@ $(document).ready(function() {
                 gameProgress.fighting = true;
             }
             attack(this);
+        } else {
+            if(gameProgress.user.health > 0){
+                gameProgress.user.health = defaults[gameProgress.user.role].health;
+                $('#battle_arena #user span span').html(gameProgress.user.health);
+            } else {
+                gameProgress.user.health = 0;
+                $('#battle_arena #user span span').html(0);
+            }
         }
     });
 });
-/*
- 
-
- */
