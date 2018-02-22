@@ -1,4 +1,11 @@
 @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+div#gameModal .modal-content #selection,
+div#gameModal .modal-content #round,
+div#gameModal .modal-content #instructions,
+div#gameModal .modal-content #gameover
+{
+    display:none;
+}
 div#battle_arena {
     background: url('../images/platform.jpg');
     position: relative;

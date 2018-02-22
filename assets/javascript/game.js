@@ -145,6 +145,21 @@ var renderUi = {
         $(selector +' span span').html(gameProgress[player]['health']);
         image.css({'opacity': '0.5'});
     },
+    getModal: function(identity){
+        //https://getbootstrap.com/docs/4.0/components/modal/
+        $('#myInput').trigger();
+        switch (identity)
+        {
+            case 'selection':
+                break;
+            case 'round':
+                break;
+            case 'instructions':
+                break;
+            case 'gameover':
+                break;
+        }
+    },
     updateWins: function(){
         $('#score_keeping span.win').html(gameProgress.wins);
     },
