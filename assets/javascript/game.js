@@ -29,13 +29,15 @@ var utilities = {
         return [thisImg.width, thisImg.height];
     },
     getPosition: function(element) {
+        if(typeof  $(element).position() === 'undefined')
+            return;
         var x = $(element).position().left;
         var y = $(element).position().top;
         return [Math.floor(x),Math.floor(y)];
     }
 };
 
-var rpgCharBase = function(name, role, health, attack, specialabel){
+var rpgCharBase = function(name, role, health, attack, specialabel, duration){
     var attackGraphics = function(){
       var img = document.createElement('img');
       img.src = assets.weaponImage(role);
@@ -51,15 +53,16 @@ var rpgCharBase = function(name, role, health, attack, specialabel){
         weaponpos: [],
         characterpos: [],
         counter: 0,
+        duration: duration,
         special: {label: specialabel, value: 0}
     };
 
 };
 
 var characterObjs = {
-    archer: new rpgCharBase('Chad', 'archer', 100, 10, 'arrow me a river'),
-    assassin: new rpgCharBase('Dick', 'assassin', 60, 25, 'dart barf'),
-    mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb')
+    archer: new rpgCharBase('Chad', 'archer', 100, 10, 'arrow me a river', 700),
+    assassin: new rpgCharBase('Dick', 'assassin', 50, 25, 'dart barf', 550),
+    mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb', 1200)
 };
 
 var defaults = $.extend(true, {}, characterObjs);
@@ -86,14 +89,13 @@ var renderUi = {
             return unsanitized.indexOf(" ") > -1 ? unsanitized.slice(0, unsanitized.indexOf(" ")).toLowerCase() : unsanitized.toLowerCase();
         });
         $('#'+self.tableId+' .'+self.tableBody).append(self.buildCharacterRows());
-
-
     },
     buildCharacterRows: function(){
         var self = this;
         var rows = $(Object.keys(self.characters)).map(function(i, role){
             var thisTR = document.createElement('tr');
             $(thisTR).addClass(role);
+            $(thisTR).addClass('enemy');
             $(thisTR).append(self.buildPropertyCells(self.characters[role]));
             return thisTR;
         });
@@ -116,6 +118,7 @@ var renderUi = {
                     $(thisTD).html(image);
                     break;
                 case 'special':
+                    $(thisTD).html(value.label);
                     break;
                 default:
                     $(thisTD).html(value);
@@ -133,9 +136,11 @@ var renderUi = {
         if(player==='user'){
             $(selector).html(clone);
             $(selector).append( '<span>Your HP: <span></span></span>' );
+            image.css({'background-color': '#BDDDF6'});
         } else {
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
             $(selector).append(  '<span>Enemy HP: <span></span></span>' );
+            image.css({'background-color': '#cea452'});
         }
         $(selector +' span span').html(gameProgress[player]['health']);
         image.css({'opacity': '0.5'});
@@ -157,17 +162,16 @@ var renderUi = {
         clone.animate({
             left: $('#battle_arena .negative-space').width() + 30
         }, {
-            duration: 500,
+            duration: gameProgress.user.duration,
             progress: function(){
                 //TODO: enhanced mechanics
             },
             complete: function() {
-                //ends at x 430
                 var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.user.role);
                 $('#battle_arena #user').find('img')[0].src = gameProgress.getCurrentFighters()[1].character;
                 $(this).removeAttr('style');
                 $(this).remove();
-                if(position[0] > 420)
+                if(typeof position === 'undefined' || position[0] > 420)
                 {
                     var currentPlayers = gameProgress.getCurrentFighters();
                     gameProgress.subtractHealth(currentPlayers[1], currentPlayers[0]);
@@ -182,16 +186,15 @@ var renderUi = {
         $(image).animate({
             right: $('#battle_arena .negative-space').width() + 60
         }, {
-            duration: 1500,
+            duration: gameProgress.opponent.duration,
             progress: function(){
                 //TODO: enhanced mechanics
             },
             complete: function() {
-                //stops at -90
                 var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress.opponent.role);
                 $('#battle_arena #opponent').find('img')[0].src = gameProgress.getCurrentFighters()[0].character;
                 $(this).removeAttr('style');
-                if(position[0] < -88){
+                if(typeof position === 'undefined' || position[0] < -88){
                     var currentPlayers = gameProgress.getCurrentFighters();
                     gameProgress.subtractHealth(currentPlayers[0], currentPlayers[1]);
                 }
@@ -200,12 +203,30 @@ var renderUi = {
                     renderUi.opponentWeapon(image);
                 else {
                     $('#battle_arena .negative-space').html('');
+                    $('#characters .info .' + gameProgress.opponent.role + ' img').css({
+                        'background-color':'#4A4545'
+                    });
+                    gameProgress.rounds -= 1;
                    if(gameProgress.getCurrentFighters()[0].health > 0){
+                       gameProgress.losses += 1;
+                       renderUi.updateLosses();
                        alert('You lose!');
                    } else {
+                       gameProgress.wins += 1;
+                       renderUi.updateWins();
                        alert('You win!');
                        gameProgress.user.health = defaults[gameProgress.user.role].health;
                        $('#battle_arena #user span span').html(gameProgress.user.health);
+                   }
+                   if(gameProgress.rounds > 0){
+                       //reset round
+                       alert('Starting the next round');
+                       renderUi.updateRounds();
+                       gameProgress.resetCurrentPlayer();
+                       gameProgress.getNextOpponent();
+                       $('#battle_arena #user span span').html(gameProgress.user.health);
+                   } else {
+                       alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
                    }
                 }
             }
@@ -227,6 +248,8 @@ var gameProgress = {
             user = this.user;
         this.user = user;
         this.opponent = opponent;
+        this.opponent.duration = this.opponent.duration * 2.5;
+        console.log(this.opponent);
     },
     getCurrentFighters: function () {
         return [this.opponent, this.user];
@@ -237,6 +260,27 @@ var gameProgress = {
             $('#battle_arena #opponent span span').html(target.health);
         if(target.role === gameProgress.user.role)
             $('#battle_arena #user span span').html(target.health);
+    },
+    resetCurrentPlayer: function() {
+        characterObjs[this.user.role] = defaults[this.user.role];
+        this.user = characterObjs[this.user.role];
+    },
+    getNextOpponent: function(){
+        var self = this;
+        gameProgress.fighting = false;
+        gameProgress.user = $.extend(true, {}, characterObjs[gameProgress.user.role]);
+        $('#battle_arena #user span span').html(gameProgress.user['health']);
+        $('#battle_arena #opponent').html('');
+        $('#characters .info').one('click', '.enemy', function(){
+            var selection = this;
+            var role = selection.className.split(' ')[0];
+            $(selection).removeClass('enemy');
+            gameProgress.opponent = characterObjs[role];
+            renderUi.renderSelection('opponent', selection);
+            gameProgress.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
+            $('#characters .info tr').off('click');
+            gameProgress.setFighters();
+        });
     }
 };
 
@@ -255,16 +299,17 @@ function jump(userElement){
 $(document).ready(function() {
     renderUi.buildPlatform();
     renderUi.buildTabularData('characters', 'info');
-    gameProgress.rounds = Object.keys(characterObjs).length;
+    gameProgress.rounds = Object.keys(characterObjs).length - 1;
     renderUi.updateRounds();
     $('#characters .info tr').one('click', function(){
         var selection = this;
         var role = this.className.split(' ')[0];
+        $(selection).removeClass('enemy');
         if(gameProgress.user){
             gameProgress.opponent = characterObjs[role];
             renderUi.renderSelection('opponent', selection);
             gameProgress.opponent.characterpos = utilities.getPosition('#battle_arena #opponent');
-            $('#characters .info tr').unbind('click');
+            $('#characters .info tr').off('click');
             gameProgress.setFighters();
         } else {
             gameProgress.user = characterObjs[role];
@@ -286,10 +331,9 @@ $(document).ready(function() {
             gameProgress.user.health > 0
         )
         {
-            if(gameProgress.fighting === false){
+            if(gameProgress.fighting === false || gameProgress.opponent === null){
                 //start animating opponent
                 var opponentRole = gameProgress.getCurrentFighters()[0]['role'];
-                //renderUi.opponentWeapon($(this).find('img')[0]);
                 renderUi.opponentWeapon(characterObjs[opponentRole].weaponui);
                 gameProgress.fighting = true;
             }
