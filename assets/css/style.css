@@ -20,6 +20,7 @@ img.mage {
 #battle_arena #user span{ left:16%;}
 #battle_arena #opponent span{ right:16%;}
 #battle_arena .negative-space {
+    position:relative;
     width: 400px;
 }
 div#battle_arena #opponent, #battle_arena #user {
