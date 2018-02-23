@@ -6,6 +6,13 @@ div#gameModal .modal-content #gameover
 {
     display:none;
 }
+div#gameModal button{
+    font-weight: bold;
+}
+div#gameModal button[disabled]{
+    color: #b7b7b7;
+    background-color: #dee9f5;
+}
 div#battle_arena {
     background: url('../images/platform.jpg');
     position: relative;

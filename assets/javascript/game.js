@@ -129,24 +129,25 @@ var renderUi = {
         return tds;
     },
     renderSelection: function(player, fighter){
+        console.trace();
         var image = $(fighter).find('img');
         var clone = image.clone().addClass(fighter.className);
         clone.width(image.width() * 3);
         var selector = '#battle_arena #'+player;
-        if(player==='user'){
-            $(selector).html(clone);
-            $(selector).append( '<span>Your HP: <span></span></span>' );
-            image.css({'background-color': '#BDDDF6'});
-        } else {
+        if(player === 'opponent'){
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
             $(selector).append(  '<span>Enemy HP: <span></span></span>' );
             image.css({'background-color': '#cea452'});
+        }
+        if(player === 'user') {
+            $(selector).html(clone);
+            $(selector).append( '<span>Your HP: <span></span></span>' );
+            image.css({'background-color': '#BDDDF6'});
         }
         $(selector +' span span').html(gameProgress[player]['health']);
         image.css({'opacity': '0.5'});
     },
     getModal: function(identity){
-        //https://getbootstrap.com/docs/4.0/components/modal/
         $('#myInput').trigger();
         switch (identity)
         {
@@ -219,7 +220,6 @@ var gameProgress = {
         this.user = user;
         this.opponent = opponent;
         this.opponent.duration = this.opponent.duration * 2.5;
-        console.log(this.opponent);
     },
     getCurrentFighters: function () {
         return [this.opponent, this.user];
@@ -295,6 +295,7 @@ var gameProgress = {
     initGame: function () {
         gameProgress.rounds = Object.keys(characterObjs).length - 1;
         renderUi.updateRounds();
+        this.initSelections();
 
         /*
         TODO: add jump feature
@@ -311,7 +312,7 @@ var gameProgress = {
             if(gameProgress.user){
                 gameProgress.initOpponentSelection(role,selection);
             } else {
-                gameProgress.initOpponentSelection(role,selection);
+                gameProgress.initUserSelection(role,selection);
             }
         });
     },
@@ -418,14 +419,19 @@ var gameActions = {
     jump: function (user) {
         //TODO: add jump feature;
     }
-}
+};
 
 $(document).ready(function() {
-    renderUi.buildTabularData('characters', 'info');
-    gameProgress.initGame();
-    gameProgress.initSelections();
+    $( "#selection" ).show();
+    $('#gameModal').on('shown.bs.modal', function(){
+        renderUi.buildTabularData('characters', 'info');
+        gameProgress.initGame();
+    });
 });
 
 $(window).on('load', function(){
     renderUi.buildPlatform();
+    $('#gameModal').modal('show');
+    $('#gameModal').modal({backdrop: 'static', keyboard: false});
+    $('#gameAction').text('No Characters Selected');
 });
