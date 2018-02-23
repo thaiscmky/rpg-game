@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>RPG</title>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="./assets/css/style.css">
     <script src="./assets/javascript/game.js"></script>
@@ -15,9 +15,9 @@
     <div class="row">
         <div class="col-12">
             <div id="score_keeping">
-                Your wins:<span class="win">0</span><br/>
-                Your losses:<span class="loss">0</span><br/>
-                Rounds left:<span class="rounds"></span><br/>
+                Your wins: <span class="win">0</span><br/>
+                Your losses: <span class="loss">0</span><br/>
+                Rounds Left: <span class="rounds"></span><br/>
             </div>
             <h1>The characters</h1>
 
@@ -28,7 +28,7 @@
                             Character
                         </th>
                         <th>
-                            Class
+                            Role
                         </th>
                         <th>
                             Health
@@ -46,20 +46,17 @@
             </table>
 
             <h1>The platform</h1>
-            <div id="battle_arena">
-                <div class="row">
-                    <div class="col user"></div>
-                    <div class="col negative-space"></div>
-                    <div class="col opponen"></div>
+            <div class="row">
+                <div class="col-12">
+                    <div id="battle_arena">
+                        <div class="row characterlane">
+                            <div id="user"></div>
+                            <div class="negative-space"></div>
+                            <div id="opponent"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <h1>The fight line</h1>
-            <table id="opponents">
-                <thead>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
         </div>
     </div>
 </main>
