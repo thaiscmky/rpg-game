@@ -421,7 +421,11 @@ var gameActions = {
 }
 
 $(document).ready(function() {
-    renderUi.buildPlatform();
     renderUi.buildTabularData('characters', 'info');
+    gameProgress.initGame();
     gameProgress.initSelections();
+});
+
+$(window).on('load', function(){
+    renderUi.buildPlatform();
 });
