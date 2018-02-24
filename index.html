@@ -19,8 +19,6 @@
                 Your losses: <span class="loss">0</span> |
                 Rounds Left: <span class="rounds"></span>
             </div>
-            <h1>The characters</h1>
-            <h1>The platform</h1>
             <div class="row">
                 <div class="col-12">
                     <div id="battle_arena">
@@ -38,9 +36,7 @@
 <div id="gameModal" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content px-4 py-3">
-            <div class="options">
-                <!--a help/reset buttons here-->
-            </div>
+
             <div id="selection">
                 <h1>Select Your Player</h1>
                 <table id="characters" class="mx-auto m-4">
@@ -114,7 +110,7 @@
                 <div id="result"></div>
                 <button type="button">Select New Opponent</button>
             </div>
-            <button type="button" id="gameAction" class="btn btn-light" disabled></button>
+            <button type="button" id="gameAction" class="btn btn-light" data-dismiss="modal"></button>
         </div>
     </div>
 </div>

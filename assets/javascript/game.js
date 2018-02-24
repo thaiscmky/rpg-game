@@ -34,6 +34,11 @@ var utilities = {
         var x = $(element).position().left;
         var y = $(element).position().top;
         return [Math.floor(x),Math.floor(y)];
+    },
+    switchClass: function(selector, remove, add){
+        $(selector).removeClass(remove);
+        if(!$(selector).hasClass(add))
+            $(selector).addClass(add);
     }
 };
 
@@ -129,7 +134,6 @@ var renderUi = {
         return tds;
     },
     renderSelection: function(player, fighter){
-        console.trace();
         var image = $(fighter).find('img');
         var clone = image.clone().addClass(fighter.className);
         clone.width(image.width() * 3);
@@ -138,6 +142,7 @@ var renderUi = {
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
             $(selector).append(  '<span>Enemy HP: <span></span></span>' );
             image.css({'background-color': '#cea452'});
+            renderUi.modal.setAction('selection', 'enable');
         }
         if(player === 'user') {
             $(selector).html(clone);
@@ -147,19 +152,42 @@ var renderUi = {
         $(selector +' span span').html(gameProgress[player]['health']);
         image.css({'opacity': '0.5'});
     },
-    getModal: function(identity){
-        $('#myInput').trigger();
-        switch (identity)
-        {
-            case 'selection':
-                break;
-            case 'round':
-                break;
-            case 'instructions':
-                break;
-            case 'gameover':
-                break;
-        }
+    modal: {
+          gameModal: '#gameModal',
+          additionalBtn: { help: '.help' },
+          action: '#gameAction',
+          setOptions: function(){
+              $(this.gameModal).modal({backdrop: 'static', keyboard: false});
+          },
+          show: function(selectorId){
+              //$(this.gameModal + ' .modal-content > div').filter( "#"+selectorId ).show();
+              //.show();
+              var visible = $(this.gameModal + ' .modal-content > div').filter( ":visible" );
+              $.each(visible, function(i, el){
+                 if(el.id !== selectorId)
+                     $(el).hide();
+                 else $(el).show();
+              });
+          },
+          setAction: function(selectorId, btn){
+              if(btn === 'disable'){
+                  utilities.switchClass(this.action, 'btn-primary', 'btn-light');
+                  $(this.action).attr(btn+'d', true);
+              } else
+              {
+                  utilities.switchClass(this.action, 'btn-light', 'btn-primary');
+                  if($(this.action).attr('disabled'))
+                      $(this.action).attr('disabled', false);
+              }
+              switch(selectorId){
+                  case 'selection':
+                      if($(this.action).prop('disabled'))
+                          $(this.action).text('No Characters Selected');
+                      else
+                          $(this.action).text( gameProgress.rounds > 0 ? 'Start Next Round' : 'Game Over. Restart.');
+                      break;
+              }
+          }
     },
     updateWins: function(){
         $('#score_keeping span.win').html(gameProgress.wins);
@@ -228,7 +256,7 @@ var gameProgress = {
         target.health -= source.attack;
         if(target.role === gameProgress.opponent.role)
             $('#battle_arena #opponent span span').html(target.health);
-        if(target.role === gameProgress.user.role)
+        else
             $('#battle_arena #user span span').html(target.health);
     },
     /*resetCurrentPlayer: function() {
@@ -266,8 +294,8 @@ var gameProgress = {
             this.wins += 1;
     },
     resetPlayer: function(){
-        $('#battle_arena #user span span').html(this.user['health']);
         this.user = $.extend(true, {}, characterObjs[this.user.role]);
+        $('#battle_arena #user span span').html(this.user['health']);
         if(this.rounds <= 0){
             $('#battle_arena #user').html('');
             this.user = false;
@@ -296,6 +324,7 @@ var gameProgress = {
         gameProgress.rounds = Object.keys(characterObjs).length - 1;
         renderUi.updateRounds();
         this.initSelections();
+        renderUi.modal.setAction('selection', 'disable');
 
         /*
         TODO: add jump feature
@@ -334,7 +363,7 @@ var gameProgress = {
             {
                 if(gameProgress.fighting === false || gameProgress.opponent === null){
                     //start animating opponent
-                    var opponentRole = gameProgress.getCurrentFighters()[0]['role'];
+                    var opponentRole = gameProgress.opponent.role;
                     renderUi.opponentWeapon(characterObjs[opponentRole].weaponui);
                     gameProgress.fighting = true;
                 }
@@ -357,9 +386,8 @@ var gameProgress = {
         this.user.characterpos = utilities.getPosition('#battle_arena #user');
     },
     validateAttack: function(el, fighterId, weaponUi){
-        //opponent logic
         var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress[fighterId]['role']);
-        $('#battle_arena #'+fighterId).find('img')[0].src = gameProgress[fighterId]['character']; //gameProgress.getCurrentFighters()[0].character;
+        $('#battle_arena #'+fighterId).find('img')[0].src = gameProgress[fighterId]['character'];
         $(el).removeAttr('style');
         switch(fighterId){
             case 'opponent':
@@ -375,9 +403,7 @@ var gameProgress = {
         if(typeof position === 'undefined' || position[0] < -88){
             gameProgress.subtractHealth(this.opponent, this.user);
         }
-        if(gameProgress.opponent.health > 0 && gameProgress.user.health > 0)
-            renderUi.opponentWeapon(weaponUi);
-        else {
+        if(gameProgress.user.health <= 0 || gameProgress.opponent.health <= 0){
             $('#battle_arena .negative-space').html('');
             $('#characters .info .' + gameProgress[fighterId]['role'] + ' img').css({
                 'background-color':'#4A4545'
@@ -392,17 +418,23 @@ var gameProgress = {
         }
     },
     validateFight: function () {
-        if(gameProgress.opponent.health  > 0){
-            alert('You lose!');
+        if(gameProgress.opponent.health <= 0 || gameProgress.user.health <= 0) {
+            $(this).delay(500).queue(function() {
+                if(gameProgress.user.health <= 0)
+                    alert('You lose!');
+                else
+                    alert('You win!');
+                if(gameProgress.rounds > 0){
+                    gameProgress.getNextOpponent();
+                    alert('Starting the next round');
+                } else {
+                    alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
+                    gameProgress.setFinalStats();
+                }
+                $(this).dequeue();
+            });
         } else {
-            alert('You win!');
-        }
-        if(gameProgress.rounds > 0){
-            gameProgress.getNextOpponent();
-            alert('Starting the next round');
-        } else {
-            alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
-            gameProgress.setFinalStats();
+            renderUi.opponentWeapon(renderUi.opponentWeapon(characterObjs[gameProgress.opponent.role].weaponui));
         }
     }
 };
@@ -422,16 +454,12 @@ var gameActions = {
 };
 
 $(document).ready(function() {
-    $( "#selection" ).show();
-    $('#gameModal').on('shown.bs.modal', function(){
-        renderUi.buildTabularData('characters', 'info');
-        gameProgress.initGame();
-    });
+    renderUi.modal.setOptions({backdrop: 'static', keyboard: false});
+    renderUi.modal.show('selection');
+    renderUi.buildTabularData('characters', 'info');
+    gameProgress.initGame();
 });
 
 $(window).on('load', function(){
     renderUi.buildPlatform();
-    $('#gameModal').modal('show');
-    $('#gameModal').modal({backdrop: 'static', keyboard: false});
-    $('#gameAction').text('No Characters Selected');
 });
