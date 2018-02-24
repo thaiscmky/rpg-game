@@ -1,4 +1,17 @@
 @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+body {
+    background-color:#000;
+}
+body main{
+    color: #fff;
+    font-family: 'Press Start 2P', sans-serif
+}
+.modal-content {
+    margin-top:10em;
+}
+div#score_keeping{
+    padding: 1.5em;
+}
 div#gameModal button{
     font-weight: bold;
 }
@@ -9,6 +22,8 @@ div#gameModal button[disabled]{
 div#battle_arena {
     background: url('../images/platform.jpg');
     position: relative;
+    border-radius: 1em;
+    border: 0.5em dotted #fffac096;
 }
 div#battle_arena .characterlane{
     position: absolute;
