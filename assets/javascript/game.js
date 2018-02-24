@@ -65,9 +65,9 @@ var rpgCharBase = function(name, role, health, attack, specialabel, duration){
 };
 
 var characterObjs = {
-    archer: new rpgCharBase('Chad', 'archer', 100, 10, 'arrow me a river', 700),
-    assassin: new rpgCharBase('Dick', 'assassin', 50, 25, 'dart barf', 550),
-    mage: new rpgCharBase('Bill', 'mage', 45, 40, 'glitter bomb', 1200)
+    archer: new rpgCharBase('Chad', 'archer', 100, 13, 'arrow me a river', 800),
+    assassin: new rpgCharBase('Dick', 'assassin', 60, 1, 'dart barf', 550),
+    mage: new rpgCharBase('Bill', 'mage', 40, 20, 'glitter bomb', 1200)
 };
 
 var defaults = $.extend(true, {}, characterObjs);
@@ -141,6 +141,11 @@ var renderUi = {
         if(player === 'opponent'){
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
             $(selector).append(  '<span>Enemy HP: <span></span></span>' );
+            gameProgress.opponent.duration = Math.floor(characterObjs[gameProgress.opponent.role].duration * 2.5);
+            gameProgress.opponent.health = characterObjs[gameProgress.opponent.role].health * 4;
+            if(gameProgress.opponent.role === 'assassin')
+                gameProgress.opponent.attack = 7;
+            $('#battle_arena #opponent span span').html(gameProgress.opponent.health);
             image.parent().parent().css({'background-color': '#cea452'});
             renderUi.modal.setAction('selection', 'enable');
         }
@@ -256,7 +261,6 @@ var gameProgress = {
             user = this.user;
         this.user = user;
         this.opponent = opponent;
-        this.opponent.duration = this.opponent.duration * 2.5;
     },
     getCurrentFighters: function () {
         return [this.opponent, this.user];
@@ -297,11 +301,13 @@ var gameProgress = {
         //this.updateUi();
     },
     updateScore: function(){
-        if(this.rounds > 0) this.rounds -= 1;
-        if(this.opponent.health > 0)
-            this.losses += 1;
-        else
-            this.wins += 1;
+        if(this.rounds > 0 ){
+            if(this.opponent.health > 0)
+                this.losses += 1;
+            else
+                this.wins += 1;
+            this.rounds -= 1;
+        }
     },
     resetPlayer: function(){
         this.user = $.extend(true, {}, characterObjs[this.user.role]);
@@ -421,6 +427,21 @@ var gameProgress = {
         $(el).remove();
         if(typeof position === 'undefined' || position[0] > 420)
         {
+            switch (this.user.role){
+                case 'assassin': //gives assassin an increasing attack power
+                    this.user.attack += 5;
+                    break;
+                case 'mage': //gives mage the chance for critical shots
+                    var max = 9;
+                    var min = 3;
+                    var randomize = Math.floor(Math.random() * (max - min)) + min;
+                    this.user.attack = characterObjs[this.user.role].attack * randomize;
+                case 'archer': //gives archer random arrow speeds
+                    var max = characterObjs[this.user.role].duration + 100;
+                    var min = characterObjs[this.user.role].duration - 100;
+                    var randomize = Math.floor(Math.random() * (max - min)) + min;
+                    this.user.duration = randomize;
+            }
             gameProgress.subtractHealth(this.user, this.opponent);
         }
     },
@@ -442,7 +463,11 @@ var gameProgress = {
                     //renderUi.modal.show('selection');
                     gameProgress.getNextOpponent();
                 } else {
-                    $('#selection h1').text(gameProgress.wins > gameProgress.losses ? 'You won the game.' : 'You lost the game.');
+                    $('#selection h1').text(
+                        gameProgress.wins > gameProgress.losses ?
+                            'You won the game.' : gameProgress.losses === gameProgress.wins ?
+                            'You have a tie. Refresh the page and try again.' : 'You lost the game.'
+                    );
                     gameProgress.setFinalStats();
                 }
                 $(this).dequeue();

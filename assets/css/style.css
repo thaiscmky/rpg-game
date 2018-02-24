@@ -45,12 +45,13 @@ div#battle_arena .characterlane{
     border: 1px solid #17a2b8;
     border-radius: 10px;
     padding: 0.2em 0.5em;
+    min-width: 9em;
 }
 img.mage {
     margin-top: -35px;
 }
 #battle_arena #user span{ left:16%;}
-#battle_arena #opponent span{ right:16%;}
+#battle_arena #opponent span{right:16%;}
 #battle_arena .negative-space {
     position:relative;
     width: 400px;
