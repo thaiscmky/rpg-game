@@ -21,6 +21,6 @@ Each time you or the opponent losses health, the other will win the round, the s
 ## Future Enhancements
 * __Restart Game__ currently, you need to refresh the page to start a brand new game once all the rounds have completed. A reset button will be added in a future version.
 * __Jump Mechanic__: just as you now select the enemy to attack, soon it will be possible to select yourself to jump or evade an attack.
-* __Joey the Tank__: we are excited to inform you that a new hero will soon be added to the ranks with a brand new mechanic; instead of shooting the target to inflict damage, you will use a shield to deflect inflicted damage back to the opponent.
+* __Joey the Tank__: I am excited to inform you that a new hero will soon be added to the ranks with a brand new mechanic; instead of shooting the target to inflict damage, you will use a shield to deflect inflicted damage back to the opponent.
 
-* __User interface__: We know the current UI looks a little slate. We will be adding visual enhancements to the character selection and _Round_ status messages.
+* __User interface__: I know the current UI looks a little slate. I will be adding visual enhancements to the character selection and _Round_ status messages.
