@@ -141,16 +141,15 @@ var renderUi = {
         if(player === 'opponent'){
             $(selector).html(clone.css({'transform': 'scaleX(-1)'}));
             $(selector).append(  '<span>Enemy HP: <span></span></span>' );
-            image.css({'background-color': '#cea452'});
+            image.parent().parent().css({'background-color': '#cea452'});
             renderUi.modal.setAction('selection', 'enable');
         }
         if(player === 'user') {
             $(selector).html(clone);
             $(selector).append( '<span>Your HP: <span></span></span>' );
-            image.css({'background-color': '#BDDDF6'});
+            image.parent().parent().css({'background-color': '#BDDDF6'});
         }
         $(selector +' span span').html(gameProgress[player]['health']);
-        image.css({'opacity': '0.5'});
     },
     modal: {
           gameModal: '#gameModal',
@@ -160,8 +159,6 @@ var renderUi = {
               $(this.gameModal).modal({backdrop: 'static', keyboard: false});
           },
           show: function(selectorId){
-              //$(this.gameModal + ' .modal-content > div').filter( "#"+selectorId ).show();
-              //.show();
               var visible = $(this.gameModal + ' .modal-content > div').filter( ":visible" );
               $.each(visible, function(i, el){
                  if(el.id !== selectorId)
@@ -184,7 +181,7 @@ var renderUi = {
                       if($(this.action).prop('disabled'))
                           $(this.action).text('No Characters Selected');
                       else
-                          $(this.action).text( gameProgress.rounds > 0 ? 'Start Next Round' : 'Game Over. Restart.');
+                          $(this.action).text('Start Next Round');
                       break;
               }
           }
@@ -208,9 +205,15 @@ var renderUi = {
         }, {
             duration: gameProgress.user.duration,
             progress: function(){
+                if(gameProgress.opponent.health <= 0 || gameProgress.user.health <= 0) {
+                    $('#battle_arena .negative-space img').html('');
+                    $('#battle_arena .negative-space img').stop(true,true);
+                    return;
+                }
                 //TODO: enhanced mechanics
             },
             complete: function() {
+                if(gameProgress.opponent.health > 0 && gameProgress.user.health > 0)
                 gameProgress.validateAttack(this,'user', image);
             }
         });
@@ -224,9 +227,15 @@ var renderUi = {
         }, {
             duration: gameProgress.opponent.duration,
             progress: function(){
+                if(gameProgress.opponent.health <= 0 || gameProgress.user.health <= 0) {
+                    $('#battle_arena .negative-space img').html('');
+                    $('#battle_arena .negative-space img').stop(true,true);
+                    return;
+                }
                 //TODO: enhanced mechanics
             },
             complete: function() {
+                if(gameProgress.opponent.health > 0 && gameProgress.user.health > 0)
                 gameProgress.validateAttack(this,'opponent', image);
             }
         });
@@ -265,11 +274,9 @@ var gameProgress = {
     },*/
     getNextOpponent: function(){
         var self = this;
-        this.updateScore();
         this.resetPlayer();
         this.resetOpponent();
         gameProgress.fighting = false;
-        this.updateUi();
         $('#characters .info').one('click', '.enemy', function(){
             var selection = this;
             var role = selection.className.split(' ')[0];
@@ -284,11 +291,14 @@ var gameProgress = {
     setFinalStats: function () {
         this.updateScore();
         gameProgress.fighting = false;
-        this.updateUi();
+        $('<div id="gameResults"></div>').insertAfter(renderUi.modal.action);
+        $(renderUi.modal.action).remove();
+        $('#gameResults').html('WINS: '+gameProgress.wins+' | LOSES: '+gameProgress.losses+'');
+        //this.updateUi();
     },
     updateScore: function(){
         if(this.rounds > 0) this.rounds -= 1;
-        if(this.opponent > 0)
+        if(this.opponent.health > 0)
             this.losses += 1;
         else
             this.wins += 1;
@@ -311,6 +321,8 @@ var gameProgress = {
         renderUi.updateRounds();
         renderUi.updateLosses();
         renderUi.updateWins();
+        renderUi.modal.setAction('selection', 'disable');
+        $(renderUi.modal.gameModal).modal('show');
     },
     resetScores: function () {
         this.wins = 0;
@@ -387,7 +399,8 @@ var gameProgress = {
     },
     validateAttack: function(el, fighterId, weaponUi){
         var position = utilities.getPosition('#battle_arena .negative-space .'+gameProgress[fighterId]['role']);
-        $('#battle_arena #'+fighterId).find('img')[0].src = gameProgress[fighterId]['character'];
+        if($('#battle_arena #'+fighterId).find('img').length > 0)
+            $('#battle_arena #'+fighterId).find('img')[0].src = gameProgress[fighterId]['character'];
         $(el).removeAttr('style');
         switch(fighterId){
             case 'opponent':
@@ -403,12 +416,6 @@ var gameProgress = {
         if(typeof position === 'undefined' || position[0] < -88){
             gameProgress.subtractHealth(this.opponent, this.user);
         }
-        if(gameProgress.user.health <= 0 || gameProgress.opponent.health <= 0){
-            $('#battle_arena .negative-space').html('');
-            $('#characters .info .' + gameProgress[fighterId]['role'] + ' img').css({
-                'background-color':'#4A4545'
-            });
-        }
     },
     validateUserAttack: function(el, fighterId, weaponUi, position) {
         $(el).remove();
@@ -419,16 +426,23 @@ var gameProgress = {
     },
     validateFight: function () {
         if(gameProgress.opponent.health <= 0 || gameProgress.user.health <= 0) {
+            this.updateScore();
+            this.updateUi();
+            $('#battle_arena .negative-space').html('');
+            $('#characters .info .' + gameProgress.opponent.role + ' img').parent().parent().css({
+                'background-color':'#4A4545',
+                'opacity': '0.5'
+            });
             $(this).delay(500).queue(function() {
                 if(gameProgress.user.health <= 0)
-                    alert('You lose!');
+                    $('#selection span').text('You lost against ' + gameProgress.opponent.role + ' ' + gameProgress.opponent.name + '...');
                 else
-                    alert('You win!');
+                    $('#selection span').text('You won against ' + gameProgress.opponent.role + ' ' + gameProgress.opponent.name + '!');
                 if(gameProgress.rounds > 0){
+                    //renderUi.modal.show('selection');
                     gameProgress.getNextOpponent();
-                    alert('Starting the next round');
                 } else {
-                    alert( gameProgress.wins > gameProgress.losses ? 'You won the game!' : 'You lost the game. Refresh the page and try again.');
+                    $('#selection h1').text(gameProgress.wins > gameProgress.losses ? 'You won the game.' : 'You lost the game.');
                     gameProgress.setFinalStats();
                 }
                 $(this).dequeue();
@@ -458,6 +472,10 @@ $(document).ready(function() {
     renderUi.modal.show('selection');
     renderUi.buildTabularData('characters', 'info');
     gameProgress.initGame();
+    //quick fix for modal not dismissing more than once
+    $(renderUi.modal.action).on('click', function(){
+        $(renderUi.modal.gameModal).modal('hide');
+    });
 });
 
 $(window).on('load', function(){
