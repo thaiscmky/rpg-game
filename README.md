@@ -1,5 +1,7 @@
 # RPG Game: Fantasy Training Camp
 
+Working demo available at: https://thaiscmky.github.io/rpg-game/
+
 ## Game Lore
 You are heroes of a foreign land, that arose from the ashes after the battle of the _Bowling Green Massacre_.
 Now, you train daily against each other to combat the remaining extremists who have risen from the shadows since the new regime of the land. Flying daggers and torch on torch violence have been on the raise, and you must prepare.
